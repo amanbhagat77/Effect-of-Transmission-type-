@@ -10,4 +10,4 @@ of cars, they are interested in exploring the relationship between a set of vari
 and manual transmissions”
 For this work we will use mtcars dataset to investigate the required the task.
 
-Please refer to [this link](courseproject.pdf) to view the whole project.
+Please refer to [this link](courseproject.pdf) to view the final report for this project.
