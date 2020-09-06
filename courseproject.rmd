@@ -1,0 +1,173 @@
+---
+title: "Effect of Transmission type in cars on fuel efficiency"
+author: "Aman Bhagat"
+date: "5/19/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+## Executive Summary
+
+This report is prepared as a part of coursework required for the Coursera Regression Model course. The instruction for this report assigmnet state as follows:
+
+You work for Motor Trend, a magazine about the automobile industry. Looking at a data set of a collection of cars, they are interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:
+
+“Is an automatic or manual transmission better for MPG”
+"Quantify the MPG difference between automatic and manual transmissions"
+
+For this work we will use mtcars dataset to investigate the required the task.
+
+
+## Data Description
+
+The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models).
+
+Usage
+mtcars
+Format
+A data frame with 32 observations on 11 (numeric) variables.
+
+[, 1]	mpg	Miles/(US) gallon
+[, 2]	cyl	Number of cylinders
+[, 3]	disp	Displacement (cu.in.)
+[, 4]	hp	Gross horsepower
+[, 5]	drat	Rear axle ratio
+[, 6]	wt	Weight (1000 lbs)
+[, 7]	qsec	1/4 mile time
+[, 8]	vs	Engine (0 = V-shaped, 1 = straight)
+[, 9]	am	Transmission (0 = automatic, 1 = manual)
+[,10]	gear	Number of forward gears
+[,11]	carb	Number of carburetors
+Note
+Henderson and Velleman (1981) comment in a footnote to Table 1: ‘Hocking [original transcriber]'s noncrucial coding of the Mazda's rotary engine as a straight six-cylinder engine and the Porsche's flat engine as a V engine, as well as the inclusion of the diesel Mercedes 240D, have been retained to enable direct comparisons to be made with previous analyses.’
+
+Source
+Henderson and Velleman (1981), Building multiple regression models interactively. Biometrics, 37, 391–411.
+
+```{r dataset}
+head(mtcars)
+amf <- as.factor(mtcars$am)
+cylf <- as.factor(mtcars$cyl)
+```
+
+## Data analyses
+
+We are interested in mainly the transmission gear types and their effect in the fuel efficiency.
+
+#### Appendix A:
+```{r plot1}
+amf <- as.factor(mtcars$am)
+g <- ggplot(data = mtcars, aes(x = amf ,y = mpg, fill = amf))
+g <- g + geom_violin()
+g <- g + geom_boxplot(width=0.1)
+g <- g + scale_fill_brewer(palette="Dark2")
+g
+```
+
+*From the above plot we can infer that the manual transmission which is denoted as "1" is more efficeint than the auto transmission.*
+
+```{r meanCal}
+meanMpg <- mtcars %>% group_by(am) %>% summarize(meanMpg = mean(mpg))
+meanMpg <- data.frame(meanMpg)
+meanMpg
+```
+
+By calculating the average value from each transmission, it shows on an average manual gear gives more miles per gallon as compared to the auto transmission gear.
+
+```{r sdCal}
+sdMpg <- mtcars %>% group_by(am) %>% summarize(sdMpg = sd(mpg))
+sdMpg <- data.frame(sdMpg)
+sdMpg
+```
+
+We can also observe that the standard deviation from the mean of the data is quiet significant in the case of manual transmission which indicates that the collected data may not be the actual representation of the population data.
+
+## Hyposthesis Testing
+
+In this report we are interested in finding out whether the change in the fuel efficiency is significant in both the case.
+
+Lets assume:
+
+H~0~ : There is no significant difference in the fuel consumption in between Transmission type.  
+H~a~ : There is a significant difference in the fuel consumption in between Transmission type.
+
+```{r t.test}
+t.test(mpg~amf, paired = FALSE, data = mtcars)
+```
+
+From the above test values we can infer that the p-value is very less than the significance level which is 0.05 therefore we reject our null hypothesis. And we can say that the difference in the fuel consumption for the two transmission type is significant. By looking at the negative sign in the confidence interval, it shows manual transmission is better than automatic transmissioon in terms of fuel efficiency.
+
+## Regression Analyses
+
+Now, we apply various linear regression models on different variables to get the significant impact on miles per gallon by different predictor including transmission types.
+
+```{r modelfit}
+ fit1 <- lm(mpg~ amf,data = mtcars)
+ fit2 <- update(fit1 , mpg~ am + cylf)
+ fit3 <- update(fit2 , mpg~ am + cylf + disp)
+ fit4 <- update(fit3 , mpg~ am + cylf + disp + hp)
+ fit5 <- update(fit4 , mpg~ am + cylf + disp + hp + drat)
+ fit6 <- update(fit5 , mpg~ am + cylf + disp + hp + drat + wt)
+ fit7 <- update(fit6 , mpg~ am + cylf + disp + hp + drat + wt + qsec)
+ fit8 <- update(fit7 , mpg~ am + cylf + disp + hp + drat + wt + qsec + vs)
+ fit9 <- update(fit8 , mpg~ am + cylf + disp + hp + drat + wt + qsec + vs + gear)
+ fit10 <- update(fit9 ,mpg~ am + cylf + disp + hp + drat + wt + qsec + vs + gear + carb)
+ anova(fit1, fit2, fit3,fit4,fit5,fit6,fit7,fit8,fit9,fit10)
+```
+
+We basically fitted our model with different set of predictors and increased our degree of freedom by 1. So from the above analyses we are able to see that there are three models in particular which are significant by looking at the probability which is less than 5%. The fits are fit2, fit4 and fit6.
+Further if we investigate, we see that with inclusion of certain predictor making these fits more significant which are weight,horsepower and cylinder. So we futher fit new models to find out the best model for the problem.
+
+```{r}
+ fit21 <- update(fit1 , mpg~ amf + cylf)
+ fit22 <- update(fit21, mpg ~ amf + cylf + wt)
+ fit23 <- update(fit21, mpg ~ amf + cylf + wt + hp)
+ anova(fit1, fit21,fit22,fit23)
+```
+
+From the above ananlyses we can see that fit21 is more significant and it has probability very less that our significance probability which means by keeping the cylinder variable constant we can interpret our coefficient more effectively.Now lets see at the coefficients of that model:
+
+```{r modelcoef}
+summary(fit21)$coef
+```
+
+Therefore we can interpret our coefficient as follows:  
+
+**Intercept:** The automatic transmission gear gives approx 24.8019 mpg in the case where the car has 4 cylinders while keeping other variables constant.
+
+**amf1:** It states that there is an increase of 2.56 in the mpg as compared to the automatic transmission type if the car has manual transmission gear and while keeping the other variables constant.  
+
+**cylf6** The coefficient of this variable says that there is a decrease in mpg by 6.1561 as compared to the cars which have 4 cylinders.
+
+**cylf8**  The coefficient of this variable says that there is a decrease in mpg by 10.0675 as compared to the cars which have 4 cylinders.
+
+## Diagnostic Plots
+
+#### Appendix B
+```{r plot2}
+par(mfrow = c(2,2))
+plot(fit21)
+```
+
+*Above residual plots indicates that our model fits well as there is no significant patterns in the residual plot which infer something unusual. Therefore residual variance doesn't follow any significant variance which interferes with our model fit.*
+
+## Summary
+
+In this particular project we are interested in finding out which transmission is better for MPG(Miles per gallon). From our hypothesis test; we found out that there is a significant difference between the gear types to mpg which also indicated that the manual transmission produces more miles per gallon.   
+
+Further we investigated to fit a model in the data and found out that inclusion of the predictor cylinder gives us more insight to the data and more accurate interpretation of the data. By which we found out that with the increase in the number of cylinders in a car reduces miles per gallon. Therefore we found out that there is a 2.56 rise in mpg of manual transmission as compared to the automatic transmission for the cars which have 4 cylinders. 
+
+## Appendix
+
+| Appendix            | Defination                                               |
+|:--------------------|:---------------------------------------------------------|
+| Appendix A:         | Violon Plot between transmission type and mpg            |
+| Appendix B:         | Various Residual plots for the diagnosis of the model    |
+
